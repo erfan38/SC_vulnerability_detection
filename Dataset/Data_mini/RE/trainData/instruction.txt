@@ -1,0 +1,124 @@
+# Reentrancy
+Also known as or related to race to empty, recursive call vulnerability, call to the unknown.
+
+The Reentrancy attack, probably the most famous Ethereum vulnerability,surprised everyone when discovered for the first time. It was first unveiled during a multimillion dollar heist which led to a hard fork of Ethereum. Reentrancy occurs when external contract calls are allowed to make new calls to the calling contract before the initial execution is complete. For a function, this means that the contract state may change in the middle of its execution as a result of a call to an untrusted contract or the use of a low level function with an external address.
+
+Loss: estimated at 3.5M ETH (~50M USD at the time)
+
+## Attack Scenario
+A smart contract tracks the balance of a number of external addresses and allows users to retrieve funds with its public withdraw() function.
+A malicious smart contract uses the withdraw() function to retrieve its entire balance.
+The victim contract executes the call.value(amount)() low level function to send the ether to the malicious contract before updating the balance of the malicious contract.
+The malicious contract has a payable fallback() function that accepts the funds and then calls back into the victim contract's withdraw() function.
+This second execution triggers a transfer of funds: remember, the balance of the malicious contract still hasn't been updated from the first withdrawal. As a result, the malicious contract successfully withdraws its entire balance a second time.
+
+## Examples
+The following function contains a function vulnerable to a reentrancy attack. When the low level call() function sends ether to the msg.sender address, it becomes vulnerable; if the address is a smart contract, the payment will trigger its fallback function with what's left of the transaction gas:
+```
+function withdraw(uint _amount) {
+	require(balances[msg.sender] >= _amount);
+	msg.sender.call.value(_amount)();
+	balances[msg.sender] -= _amount;
+}
+````
+## 2 Reentrancy
+Reentrancy vulnerability is considered as an invocation to _call.value_ that can call back to itself through a chain of calls.
+
+
+### How to label the reentrancy vulnerability?
+We refer to several expert patterns to label the reentrancy vulnerability. 
+1) **callValueInvocation** that checks whether there exists an invocation to call.value in the function.
+2) **balanceDeduction** checks whether the user balance is deducted after money transfer using _call.value_, which considers the fact that the money stealing 
+can be avoided if user balance is deducted each time before money transfer.
+3) **zeroParameter** checks whether the parameter of the _call.value_ function itself is zero.
+4) **ModifierConstrain** checks whether the function is constrained by the _onlyOwner_ modifier.
+We consider a function as suspicious to have a reentrancy vulnerability if it fulfills the combined pattern: **callValueInvocation ∧ balanceDeduction ∧ zeroParameter ∧ (!ModifierConstrain)**.
+
+
+
+#### callValueInvocation
+
+Note that we treat those functions with an invocation to *call.value* as the target functions. As such, we first utilize the pattern **callValueInvocation** to filter those functions without an invocation to _call.value_.
+
+
+#### zeroParameter
+
+Case 1: When the _call.value_ exists in the function and the parameter of the *call.value* is zero, we label the corresponding function to have no reentrancy vulnerability, i.e., label = 0.
+     
+     ```
+        1.contract HiroyukiCoinDark {
+        2.    mapping(address => uint256) public balanceOf;
+        3.    function transfer(address _to, uint _value, bytes _data) public returns (bool) {
+        4.        require(balanceOf[msg.sender] >= _value);
+        5.        balanceOf[msg.sender] = balanceOf[msg.sender] - _value;
+        6.        balanceOf[_to] = balanceOf[_to] + _value;
+        7.        assert(msg.sender.call.value(0)());
+        8.        return true;
+        9.    }
+        10.}
+    ```
+    
+As can be seen, the parameter of _call.value_ is zero (line 7). Thus, we label that the function _transfer_ dose not exist the reentrancy vulnerability, i.e., label = 0.
+
+
+#### balanceDeduction
+
+Case 1: When the parameter of _call.value_ is not zero and the user balance is deducted before money transfer using _call.value_, we label the corresponding function to have no reentrancy vulnerability, i.e., label = 0.
+   
+    ```
+        1.contract NIZIGEN {
+        2.    mapping (address => uint) balances;  
+        3.    function transfer(uint _value, bytes _data) public returns (bool) { 
+        4.      if(true) {
+        5.          if (balances[msg.sender] < _value) revert();
+        6.          balances[msg.sender] = balances[msg.sender] - _value;
+        7.          assert(msg.sender.call.value(_value)(_data));
+        8.          return true;
+        9.      }
+        10.      else {
+        11.          return false;
+        12.      }
+        13.    }
+        14.}
+    ```
+    
+It can be observed, the user balance _balances[msg.sender]_(line 6) is deducted before money transfer using _call.value_ (line 7). Thus, we label the corresponding function to have no reentrancy vulnerability, i.e., label = 0.
+
+
+#### modifierDeclaration
+
+Case 1: When a function has the _onlyOwner_ modifier constraint, we label the corresponding function to have no reentrancy vulnerability.
+    
+    ```
+        1.contract CrowdsaleWPTByRounds {
+        2.  mapping (address => uint) balances;
+        3.  address wallet;
+        4.  address owner;
+        5.  modifier onlyOwner() {
+        6.    require(msg.sender == owner);
+        7.    _;
+        8.  }   
+        9.  function forwardFunds() internal onlyOwner {
+        10.     wallet.call.value(msg.value).gas(10000000)();
+        11.     balances[wallet] -= msg.value;
+        12.  }
+        13.}
+    ```
+    
+As can be seen, the function _forwardFunds_ is constrained by the _onlyOwner_ modifier(line 9). Thus, we label the function _forwardFunds_ to have no reentrancy vulnerability, i.e., label = 0.
+
+
+Case 2: When a function has not the _onlyOwner_ modifier constraint, we label the corresponding function to have the reentrancy vulnerability.
+      
+      ```
+        1.contract CrowdsaleWPTByRounds {
+        2.  mapping (address => uint) balances;
+        3.  address wallet;
+        4.  function forwardFunds() internal {
+        5.    wallet.call.value(msg.value).gas(10000000)();
+        6.    balances[wallet] -= msg.value;
+        7.  }
+        8.}
+    ```
+    
+It can be observed, the function _forwardFunds_ is not constrained by the _onlyOwner_ modifier(line 9). Thus, we label the function _forwardFunds_ to have the reentrancy vulnerability, i.e., label = 1.

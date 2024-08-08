@@ -1,0 +1,110 @@
+[
+  {
+     "vulnerableLines": "6-13",
+     "vulnerabilityReason": "The function uses send to transfer ether before updating the counterCallLimit, allowing for reentrant calls to this function.",
+     "potentialSecurityRisk": "An attacker could repeatedly call this function before the counter call limit is updated, potentially draining funds from the contract.",
+     "fixedCode": "function callFunctionWithLimit() public { require(counterCallLimit <= 5); counterCallLimit += 1; if (!(msg.sender.send(10 ether))) { revert(); } }"
+  },
+  {
+     "vulnerableLines": "16-23",
+     "vulnerabilityReason": "The function uses send to transfer the jackpot amount before updating the lastPlayerAddress. This allows a reentrant call to execute again before state changes.",
+     "potentialSecurityRisk": "A malicious contract could repeatedly call this function to drain funds associated with the jackpot as the lastPlayerAddress is not updated before sending ether.",
+     "fixedCode": "function buyTicket() public { require(!(lastPlayerAddress.send(jackpotAmount))); lastPlayerAddress = msg.sender; jackpotAmount = address(this).balance; }"
+  },
+  {
+     "vulnerableLines": "26-33",
+     "vulnerabilityReason": "The function uses send to transfer ether before updating the counterCallLimit, allowing for reentrant calls to this function.",
+     "potentialSecurityRisk": "An attacker could exploit this to repeatedly withdraw ether beyond intended limits, exhausting the balance of the contract.",
+     "fixedCode": "function callFunctionWithLimitTwo() public { require(counterCallLimitTwo <= 5); counterCallLimitTwo += 1; if (!(msg.sender.send(10 ether))) { revert(); } }"
+  },
+  {
+     "vulnerableLines": "36-43",
+     "vulnerabilityReason": "The function uses send to transfer funds and does not update the lastPlayerAddress before the transaction, leading to potential reentrancy.",
+     "potentialSecurityRisk": "A reentrant call could happen allowing an attacker to claim more tickets than they are entitled to, draining the contract's ether balance.",
+     "fixedCode": "function buyTicketTwo() public { require(!(lastPlayerAddressTwo.send(jackpotAmountTwo))); lastPlayerAddressTwo = msg.sender; jackpotAmountTwo = address(this).balance; }"
+  },
+  {
+     "vulnerableLines": "46-51",
+     "vulnerabilityReason": "The function uses call.value to transfer funds before resetting the user balance, exposing it to reentrant attacks.",
+     "potentialSecurityRisk": "An attacker could call this function again during the fund transfer, allowing them to withdraw funds continuously before their balance is reset.",
+     "fixedCode": "function withdrawBalances() public { uint256 balance = balancesMappingOne[msg.sender]; (bool success,) = msg.sender.call.value(balance)(''); if (success) balancesMappingOne[msg.sender] = 0; }"
+  },
+  {
+     "vulnerableLines": "53-58",
+     "vulnerabilityReason": "Funds are sent to the user before the balance is deducted, allowing for potential reentrant execution.",
+     "potentialSecurityRisk": "An attacker could drain the contract's funds by exploiting this reentrancy, receiving more ether than their allowed balance.",
+     "fixedCode": "function withdrawFunds(uint256 _weiToWithdraw) public { require(balancesMappingTwo[msg.sender] >= _weiToWithdraw); balancesMappingTwo[msg.sender] -= _weiToWithdraw; require(msg.sender.send(_weiToWithdraw)); }"
+  },
+  {
+     "vulnerableLines": "60-68",
+     "vulnerabilityReason": "The function sends ether before updating the isNotCalledVariable flag, making it vulnerable to reentrant attacks.",
+     "potentialSecurityRisk": "Attackers can exploit this to call this function multiple times, receiving more ether than intended.",
+     "fixedCode": "function actionOnNotCalled() public { require(isNotCalledVariable); isNotCalledVariable = false; if (!(msg.sender.send(1 ether))) { revert(); } }"
+  },
+  {
+     "vulnerableLines": "74-81",
+     "vulnerabilityReason": "Use of call.value to send funds before validating the user's balance, which is prone to reentrancy.",
+     "potentialSecurityRisk": "An attacker could invoke this contract reentrantly, siphoning more funds than they have deposited.",
+     "fixedCode": "function withdrawUserBalanceOne() public { uint256 balance = userBalanceOne[msg.sender]; (bool success,) = msg.sender.call.value(balance)(''); if (success) userBalanceOne[msg.sender] = 0; }"
+  },
+  {
+     "vulnerableLines": "83-90",
+     "vulnerabilityReason": "The function sends ether to the user before updating the state variable isNotCalledVariable, making it susceptible to reentrancy.",
+     "potentialSecurityRisk": "This allows an attacker to exploit the gap to receive more ether than desired, jeopardizing contract funds.",
+     "fixedCode": "function actionOnNotCalledTwo() public { require(isNotCalledVariableTwo); isNotCalledVariableTwo = false; if (!(msg.sender.send(1 ether))) { revert(); } }"
+  },
+  {
+     "vulnerableLines": "92-98",
+     "vulnerabilityReason": "The call to transfer funds occurs before the user's reward balance is reset, allowing reentrancy.",
+     "potentialSecurityRisk": "An attacker can exploit this to repeatedly claim rewards, depleting the contract's balance.",
+     "fixedCode": "function claimReward() public { require(redeemableEtherMapping[msg.sender] > 0); uint transferValue = redeemableEtherMapping[msg.sender]; redeemableEtherMapping[msg.sender] = 0; msg.sender.transfer(transferValue); }"
+  },
+  {
+     "vulnerableLines": "100-105",
+     "vulnerabilityReason": "The transfer operation occurs before resetting the user's balance, exposing it to additional withdrawals.",
+     "potentialSecurityRisk": "This could allow an attacker to drain funds by withdrawing multiple times before their balance is updated.",
+     "fixedCode": "function withdrawFundsThree(uint256 _weiToWithdraw) public { require(balancesMappingThree[msg.sender] >= _weiToWithdraw); balancesMappingThree[msg.sender] -= _weiToWithdraw; require(msg.sender.send(_weiToWithdraw)); }"
+  },
+  {
+     "vulnerableLines": "107-113",
+     "vulnerabilityReason": "Transfer of fund occurs prior to resetting the redeemable balance, which makes it vulnerable to reentrant attacks.",
+     "potentialSecurityRisk": "An attacker could continuously claim their rewards before the balance is reset, leading to unauthorized withdrawals.",
+     "fixedCode": "function claimRewardTwo() public { require(redeemableEtherMappingTwo[msg.sender] > 0); uint transferValue = redeemableEtherMappingTwo[msg.sender]; redeemableEtherMappingTwo[msg.sender] = 0; msg.sender.transfer(transferValue); }"
+  },
+  {
+     "vulnerableLines": "123-129",
+     "vulnerabilityReason": "This function sends ether before updating the user's reward balance, allowing for multiple withdrawals during reentrant calls.",
+     "potentialSecurityRisk": "Potential for attackers to withdraw funds repeatedly from the contract, exploiting its vulnerability before balances are updated.",
+     "fixedCode": "function claimRewardThree() public { require(redeemableEtherMappingThree[msg.sender] > 0); uint transferValue = redeemableEtherMappingThree[msg.sender]; redeemableEtherMappingThree[msg.sender] = 0; msg.sender.transfer(transferValue); }"
+  },
+  {
+     "vulnerableLines": "138-142",
+     "vulnerabilityReason": "Using send to transfer funds before resetting the user balance exposes the contract to reentrancy attacks.",
+     "potentialSecurityRisk": "Exploiters can invoke this function multiple times, pulling out more ether than their entitled balance, draining the contract.",
+     "fixedCode": "function withdrawBalancesFour() public { uint256 balance = balancesMappingFour[msg.sender]; if (msg.sender.send(balance)) { balancesMappingFour[msg.sender] = 0; } }"
+  },
+  {
+     "vulnerableLines": "155-162",
+     "vulnerabilityReason": "Potential reentrancy due to sending funds before updating the counter, enabling repeated invocations.",
+     "potentialSecurityRisk": "Attackers may drain the contract of funds before the limit is enforced, detonating the intended safety checks.",
+     "fixedCode": "function callFunctionWithLimitThree() public { require(counterCallLimitThree <= 5); counterCallLimitThree += 1; if (!(msg.sender.send(10 ether))) { revert(); } }"
+  },
+  {
+     "vulnerableLines": "167-174",
+     "vulnerabilityReason": "The use of call.value before modifying the user balance facilitates potential reentrancy.",
+     "potentialSecurityRisk": "An attacker could exploit this to withdraw repeatedly, siphoning funds away from the contract.",
+     "fixedCode": "function withdrawBalanceTwo() public { uint256 balance = userBalanceTwo[msg.sender]; (bool success,) = msg.sender.call.value(balance)(''); if (success) userBalanceTwo[msg.sender] = 0; }"
+  },
+  {
+     "vulnerableLines": "181-188",
+     "vulnerabilityReason": "The function sends funds to the user before updating their balance, leading to a potential reentrancy attack.",
+     "potentialSecurityRisk": "This can allow attackers to make repeated calls, withdrawing more than their balance allows, draining the contract.",
+     "fixedCode": "function withdrawBalanceThree() public { uint256 balance = userBalanceThree[msg.sender]; (bool success,) = msg.sender.call.value(balance)(''); if (success) userBalanceThree[msg.sender] = 0; }"
+  },
+  {
+     "vulnerableLines": "193-200",
+     "vulnerabilityReason": "The function permits sending ether before the isNotCalledVariable is updated, which could encourage reentrancy.",
+     "potentialSecurityRisk": "An attacker could exploit this to drain funds multiple times within one transaction, altering the contract state unintentionally.",
+     "fixedCode": "function actionOnNotCalledThree() public { require(isNotCalledVariableThree); isNotCalledVariableThree = false; if (!(msg.sender.send(1 ether))) { revert(); } }"
+  }
+]

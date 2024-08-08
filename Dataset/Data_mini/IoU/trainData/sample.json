@@ -1,0 +1,110 @@
+[
+  {
+     "vulnerableLines": "6-9",
+     "vulnerabilityReason": "The variable 'value' is initialized to 0 and then decremented by 10 without any checks, leading to an underflow.",
+     "potentialSecurityRisk": "This allows 'value' to wrap around to a large positive number, which could be exploited to manipulate subsequent logic, potentially leading to unexpected contract behavior.",
+     "fixedCode": "function testFunction1() public { uint8 value = 0; require(value >= 10); value = value - 10; }"
+  },
+  {
+     "vulnerableLines": "12-15",
+     "vulnerabilityReason": "Similar to the previous function, 'value' starts at 0 and is decremented by 10, creating an underflow.",
+     "potentialSecurityRisk": "This underflow can allow the variable to roll over to a large value, leading to potential misuse or errors in future calculations.",
+     "fixedCode": "function testFunction2() public { uint8 value = 0; require(value >= 10); value = value - 10; }"
+  },
+  {
+     "vulnerableLines": "18-25",
+     "vulnerabilityReason": "The 'balances_test1' mapping can result in an underflow since subtraction occurs without prior validation.",
+     "potentialSecurityRisk": "An attacker can manipulate balances to allow unlimited withdrawals, leading to potential loss of funds.",
+     "fixedCode": "function transfer_test1(address _to, uint _value) public returns (bool) { require(balances_test1[msg.sender] >= _value); balances_test1[msg.sender] -= _value; balances_test1[_to] += _value; return true; }"
+  },
+  {
+     "vulnerableLines": "28-35",
+     "vulnerabilityReason": "Similar to the previous function, there is no check before subtracting from 'balances_test2'.",
+     "potentialSecurityRisk": "It exposes the contract to similar risks of fund manipulation as described in the previous function.",
+     "fixedCode": "function transfer_test2(address _to, uint _value) public returns (bool) { require(balances_test2[msg.sender] >= _value); balances_test2[msg.sender] -= _value; balances_test2[_to] += _value; return true; }"
+  },
+  {
+     "vulnerableLines": "38-41",
+     "vulnerabilityReason": "'value' is incremented by 'param' without checks, which can cause overflow if 'param' is large.",
+     "potentialSecurityRisk": "This can manipulate logic elsewhere in the contract, as 'value' could exceed the maximum allowable uint8 value.",
+     "fixedCode": "function testFunction3(uint8 param) public { uint8 value = 0; require(value + param >= value); value = value + param; }"
+  },
+  {
+     "vulnerableLines": "43-46",
+     "vulnerabilityReason": "Similar to prior functions, 'value' starts at 0 and decremented by 10, leading to underflow.",
+     "potentialSecurityRisk": "This can cause unintended manipulations leading to incorrect logic execution in further contract functions.",
+     "fixedCode": "function testFunction4() public { uint8 value = 0; require(value >= 10); value = value - 10; }"
+  },
+  {
+     "vulnerableLines": "48-57",
+     "vulnerabilityReason": "As with previous balance checks, these could result in an underflow when a user tries to withdraw more than their balance.",
+     "potentialSecurityRisk": "Allows an attacker to exploit the contract by creating negative balance situations, leading to substantial fund losses.",
+     "fixedCode": "function withdraw_test1() public { require(block.timestamp > lockTime_test1[msg.sender], 'Lock time not passed');  uint transferValue_test1 = 10;  require(address(this).balance >= transferValue_test1, 'Insufficient contract balance');  payable(msg.sender).transfer(transferValue_test1);  }"
+  },
+  {
+     "vulnerableLines": "63-70",
+     "vulnerabilityReason": "The same issue as seen in previous transfer functions occurs here: no checks on potential underflow during balance modifications.",
+     "potentialSecurityRisk": "An attacker could maliciously withdraw more than available, leading to a negative balance in 'balances_test3'.",
+     "fixedCode": "function transfer_test3(address _to, uint _value) public returns (bool) { require(balances_test3[msg.sender] >= _value); balances_test3[msg.sender] -= _value; balances_test3[_to] += _value; return true; }"
+  },
+  {
+     "vulnerableLines": "72-75",
+     "vulnerabilityReason": "'value' is being incremented without sufficient checks, enabling overflow if 'param' is large.",
+     "potentialSecurityRisk": "Overflow can lead to unpredicted and malicious contract behavior due to out-of-bounds value abuses.",
+     "fixedCode": "function testFunction5(uint8 param) public { uint8 value = 0; require(value + param >= value); value = value + param; }"
+  },
+  {
+     "vulnerableLines": "77-80",
+     "vulnerabilityReason": "An underflow risk similar to previous functions, as decrement of 'value' can lead to improper state alteration.",
+     "potentialSecurityRisk": "This can break contract logic and create unforeseen issues within the contract dealings or arithmetic.",
+     "fixedCode": "function testFunction6(uint8 param) public { uint8 value = 0; require(value + param >= value); value = value + param; }"
+  },
+  {
+     "vulnerableLines": "82-89",
+     "vulnerabilityReason": "As before, 'balances_test4' can go negative if underflows happen during updates.",
+     "potentialSecurityRisk": "This increases chances of exploiting balance for unauthorized fund transfers and manipulation.",
+     "fixedCode": "function transfer_test4(address _to, uint _value) public returns (bool) { require(balances_test4[msg.sender] >= _value); balances_test4[msg.sender] -= _value; balances_test4[_to] += _value; return true; }"
+  },
+  {
+     "vulnerableLines": "91-94",
+     "vulnerabilityReason": "Incrementing 'value' without validation risks overflow if 'param' is sizeable.",
+     "potentialSecurityRisk": "Could allow values to wrap around creating false states which can lead to value manipulations elsewhere.",
+     "fixedCode": "function testFunction7(uint8 param) public { uint8 value = 0; require(value + param >= value); value = value + param; }"
+  },
+  {
+     "vulnerableLines": "104-107",
+     "vulnerabilityReason": "Initiating from zero and directly decrementing can cause underflow.",
+     "potentialSecurityRisk": "This can result in allowing abnormal values which may break intended functionality within the contract.",
+     "fixedCode": "function testFunction8() public { uint8 value = 0; require(value >= 10); value = value - 10; }"
+  },
+  {
+     "vulnerableLines": "116-119",
+     "vulnerabilityReason": "Repetition of overflow risks when 'value' is incremented by 'param' unrestricted.",
+     "potentialSecurityRisk": "May lead to contract state issues due to failing validations elsewhere which depend on 'value'.",
+     "fixedCode": "function testFunction9(uint8 param) public { uint8 value = 0; require(value + param >= value); value = value + param; }"
+  },
+  {
+     "vulnerableLines": "132-135",
+     "vulnerabilityReason": "Undeclared risks as 'value' is decremented without checks can also allow underflows.",
+     "potentialSecurityRisk": "Same malicious exploits could happen as described in previous segments, leading to manipulated value states.",
+     "fixedCode": "function testFunction10() public { uint8 value = 0; require(value >= 10); value = value - 10; }"
+  },
+  {
+     "vulnerableLines": "140-143",
+     "vulnerabilityReason": "Incrementing 'value' without proper checks on overflow potential leads to vulnerabilities.",
+     "potentialSecurityRisk": "Can cause logic flow errors in the contract making it unpredictable and vulnerable to attacks.",
+     "fixedCode": "function testFunction11(uint8 param) public { uint8 value = 0; require(value + param >= value); value = value + param; }"
+  },
+  {
+     "vulnerableLines": "150-159",
+     "vulnerabilityReason": "Undercut risks in handling timestamps could result in non-expected fund manipulations related to timing.",
+     "potentialSecurityRisk": "An attacker could exploit potential timeline manipulations leading the contract's state into unstable values.",
+     "fixedCode": "function withdraw_test2() public { require(now > lockTime_test2[msg.sender]); uint transferValue_test2 = 10; require(address(this).balance >= transferValue_test2); msg.sender.transfer(transferValue_test2); }"
+  },
+  {
+     "vulnerableLines": "164-167",
+     "vulnerabilityReason": "Last segment reiterates the problem where no checks exist for 'value', leading to underflow risks.",
+     "potentialSecurityRisk": "As per previous functions, can lead to unauthorized manipulations and invalid contract states.",
+     "fixedCode": "function testFunction12() public { uint8 value = 0; require(value >= 10); value = value - 10; }"
+  }
+]
